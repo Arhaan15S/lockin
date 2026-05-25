@@ -1,12 +1,6 @@
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
-import { createClient } from '@supabase/supabase-js'
-
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
-)
 
 const TABS = ['summary', 'concepts', 'questions', 'flashcards', 'memorize']
 const TAB_LABELS = { summary: 'Summary', concepts: 'Key Concepts', questions: 'Test Qs', flashcards: 'Flashcards', memorize: 'Memorize' }
@@ -52,10 +46,17 @@ export default function Dashboard() {
   const outputRef = useRef(null)
 
   useEffect(() => {
-    supabase.auth.getUser().then(({ data }) => {
+    async function checkUser() {
+      const { createClient } = await import('@supabase/supabase-js')
+      const supabase = createClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL,
+        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+      )
+      const { data } = await supabase.auth.getUser()
       if (!data.user) window.location.href = '/login'
       else setUser(data.user)
-    })
+    }
+    checkUser()
   }, [])
 
   async function handleSubmit() {
@@ -74,11 +75,20 @@ export default function Dashboard() {
   }
 
   async function handleLogout() {
+    const { createClient } = await import('@supabase/supabase-js')
+    const supabase = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+    )
     await supabase.auth.signOut()
     window.location.href = '/'
   }
 
-  if (!user) return <div style={{ minHeight: '100vh', background: '#080808', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><div style={{ width: 28, height: 28, border: '2px solid #1f2937', borderTopColor: '#22c55e', borderRadius: '50%', animation: 'spin 0.7s linear infinite' }} /></div>
+  if (!user) return (
+    <div style={{ minHeight: '100vh', background: '#080808', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+      <div style={{ width: 28, height: 28, border: '2px solid #1f2937', borderTopColor: '#22c55e', borderRadius: '50%' }} />
+    </div>
+  )
 
   return (
     <div style={{ minHeight: '100vh', background: '#080808', fontFamily: "'DM Sans', sans-serif" }}>

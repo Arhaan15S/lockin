@@ -1,12 +1,6 @@
 'use client'
 
 import { useState } from 'react'
-import { createClient } from '@supabase/supabase-js'
-
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
-)
 
 export default function Signup() {
   const [email, setEmail] = useState('')
@@ -18,6 +12,11 @@ export default function Signup() {
   async function handleSignup() {
     setLoading(true)
     setError(null)
+    const { createClient } = await import('@supabase/supabase-js')
+    const supabase = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+    )
     const { error } = await supabase.auth.signUp({ email, password })
     if (error) setError(error.message)
     else setDone(true)
