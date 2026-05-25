@@ -43,6 +43,7 @@ export default function Dashboard() {
   const [loading, setLoading] = useState(false)
   const [result, setResult] = useState(null)
   const [error, setError] = useState(null)
+  const [upgrading, setUpgrading] = useState(false)
   const outputRef = useRef(null)
 
   useEffect(() => {
@@ -74,6 +75,16 @@ export default function Dashboard() {
     setLoading(false)
   }
 
+  async function handleUpgrade() {
+    setUpgrading(true)
+    try {
+      const res = await fetch('/api/checkout', { method: 'POST' })
+      const data = await res.json()
+      if (data.url) window.location.href = data.url
+    } catch (err) { console.error(err) }
+    setUpgrading(false)
+  }
+
   async function handleLogout() {
     const { createClient } = await import('@supabase/supabase-js')
     const supabase = createClient(
@@ -95,8 +106,11 @@ export default function Dashboard() {
       <nav style={{ position: 'sticky', top: 0, zIndex: 100, background: '#08080899', backdropFilter: 'blur(12px)', borderBottom: '1px solid #111', padding: '0 24px' }}>
         <div style={{ maxWidth: 720, margin: '0 auto', display: 'flex', alignItems: 'center', justifyContent: 'space-between', height: 56 }}>
           <span style={{ fontSize: 20, fontWeight: 900, color: '#f3f4f6' }}>Lock<span style={{ color: '#22c55e' }}>In</span></span>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-            <span style={{ fontSize: 13, color: '#6b7280' }}>{user.email}</span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+            <button onClick={handleUpgrade} disabled={upgrading}
+              style={{ background: '#22c55e', color: '#000', border: 'none', borderRadius: 6, padding: '7px 16px', fontSize: 13, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit' }}>
+              {upgrading ? 'Loading...' : '⚡ Upgrade to Pro'}
+            </button>
             <button onClick={handleLogout} style={{ background: 'transparent', border: '1px solid #374151', color: '#9ca3af', borderRadius: 6, padding: '6px 14px', fontSize: 13, cursor: 'pointer', fontFamily: 'inherit' }}>Sign out</button>
           </div>
         </div>
