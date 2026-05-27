@@ -1,13 +1,47 @@
 import Anthropic from '@anthropic-ai/sdk'
+import { createClient } from '@supabase/supabase-js'
 
 const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
 
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL,
+  process.env.SUPABASE_SERVICE_ROLE_KEY
+)
+
 export async function POST(request) {
   try {
-    const { input } = await request.json()
+    const { input, userId } = await request.json()
 
     if (!input || input.trim().length < 3) {
       return Response.json({ error: 'Please enter some content to study.' }, { status: 400 })
+    }
+
+    // Check usage limits if user is logged in
+    if (userId) {
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('plan')
+        .eq('id', userId)
+        .single()
+
+      if (profile && profile.plan === 'free') {
+        const currentMonth = new Date().toISOString().slice(0, 7)
+        const { count } = await supabase
+          .from('sessions')
+          .select('*', { count: 'exact', head: true })
+          .eq('user_id', userId)
+          .eq('month', currentMonth)
+
+        if (count >= 5) {
+          return Response.json({ error: 'Free limit reached. Upgrade to Pro for unlimited sessions.', limitReached: true }, { status: 403 })
+        }
+
+        // Log this session
+        await supabase.from('sessions').insert({
+          user_id: userId,
+          month: currentMonth,
+        })
+      }
     }
 
     const prompt = `You are LockIn, an AI study assistant for students cramming before exams.

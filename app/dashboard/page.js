@@ -66,7 +66,7 @@ export default function Dashboard() {
     setResult(null)
     setError(null)
     try {
-      const res = await fetch('/api/study', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ input }) })
+      const res = await fetch('/api/study', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ input, userId: user.id })
       const data = await res.json()
       if (!res.ok) throw new Error(data.error || 'Something went wrong.')
       setResult(data)
