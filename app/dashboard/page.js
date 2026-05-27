@@ -37,6 +37,32 @@ function Output({ data }) {
   )
 }
 
+function UpgradeModal({ onClose, onUpgrade, upgrading }) {
+  return (
+    <div style={{ position: 'fixed', inset: 0, background: '#000000aa', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: 24 }}>
+      <div style={{ background: '#0d1117', border: '1px solid #22c55e', borderRadius: 16, padding: 40, maxWidth: 420, width: '100%', textAlign: 'center' }}>
+        <div style={{ fontSize: 36, marginBottom: 16 }}>⚡</div>
+        <h2 style={{ fontSize: 24, fontWeight: 900, color: '#f3f4f6', marginBottom: 8 }}>You've used all 5 free sessions</h2>
+        <p style={{ color: '#6b7280', fontSize: 15, lineHeight: 1.6, marginBottom: 32 }}>
+          Upgrade to Pro for unlimited study sessions, priority speed, and advanced features. Less than a Red Bull.
+        </p>
+        <div style={{ background: '#0a1a0a', border: '1px solid #1f2937', borderRadius: 12, padding: '20px 24px', marginBottom: 24 }}>
+          <div style={{ fontSize: 36, fontWeight: 900, color: '#f3f4f6', marginBottom: 4 }}>$7<span style={{ fontSize: 16, color: '#6b7280', fontWeight: 400 }}>/month</span></div>
+          <div style={{ fontSize: 13, color: '#6b7280' }}>Cancel anytime</div>
+        </div>
+        <button onClick={onUpgrade} disabled={upgrading}
+          style={{ width: '100%', background: '#22c55e', color: '#000', border: 'none', borderRadius: 8, padding: '14px', fontSize: 15, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit', marginBottom: 12 }}>
+          {upgrading ? 'Loading...' : 'Upgrade to Pro — $7/mo'}
+        </button>
+        <button onClick={onClose}
+          style={{ width: '100%', background: 'transparent', color: '#6b7280', border: 'none', padding: '10px', fontSize: 14, cursor: 'pointer', fontFamily: 'inherit' }}>
+          Maybe later
+        </button>
+      </div>
+    </div>
+  )
+}
+
 export default function Dashboard() {
   const [user, setUser] = useState(null)
   const [input, setInput] = useState('')
@@ -44,6 +70,7 @@ export default function Dashboard() {
   const [result, setResult] = useState(null)
   const [error, setError] = useState(null)
   const [upgrading, setUpgrading] = useState(false)
+  const [showUpgradeModal, setShowUpgradeModal] = useState(false)
   const outputRef = useRef(null)
 
   useEffect(() => {
@@ -66,8 +93,13 @@ export default function Dashboard() {
     setResult(null)
     setError(null)
     try {
-      const res = await fetch('/api/study', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ input, userId: user.id })
+      const res = await fetch('/api/study', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ input, userId: user.id }) })
       const data = await res.json()
+      if (data.limitReached) {
+        setShowUpgradeModal(true)
+        setLoading(false)
+        return
+      }
       if (!res.ok) throw new Error(data.error || 'Something went wrong.')
       setResult(data)
       setTimeout(() => outputRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 100)
@@ -103,6 +135,7 @@ export default function Dashboard() {
 
   return (
     <div style={{ minHeight: '100vh', background: '#080808', fontFamily: "'DM Sans', sans-serif" }}>
+      {showUpgradeModal && <UpgradeModal onClose={() => setShowUpgradeModal(false)} onUpgrade={handleUpgrade} upgrading={upgrading} />}
       <nav style={{ position: 'sticky', top: 0, zIndex: 100, background: '#08080899', backdropFilter: 'blur(12px)', borderBottom: '1px solid #111', padding: '0 24px' }}>
         <div style={{ maxWidth: 720, margin: '0 auto', display: 'flex', alignItems: 'center', justifyContent: 'space-between', height: 56 }}>
           <span style={{ fontSize: 20, fontWeight: 900, color: '#f3f4f6' }}>Lock<span style={{ color: '#22c55e' }}>In</span></span>
@@ -122,7 +155,7 @@ export default function Dashboard() {
           <textarea value={input} onChange={e => setInput(e.target.value)} placeholder="Paste notes, textbook content, or type a topic..." rows={6}
             style={{ width: '100%', background: 'transparent', border: 'none', color: '#e5e7eb', fontSize: 15, lineHeight: 1.7, padding: '20px 20px 12px', resize: 'none', fontFamily: 'inherit', outline: 'none' }} />
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 16px 14px' }}>
-            <span style={{ fontSize: 12, color: '#374151' }}>{input.length > 0 ? `${input.length} characters` : 'Free — unlimited sessions'}</span>
+            <span style={{ fontSize: 12, color: '#374151' }}>{input.length > 0 ? `${input.length} characters` : '5 free sessions per month'}</span>
             <button onClick={handleSubmit} disabled={loading || !input.trim()}
               style={{ background: input.trim() && !loading ? '#22c55e' : '#1a2e1a', color: input.trim() && !loading ? '#000' : '#374151', border: 'none', borderRadius: 8, fontSize: 14, fontWeight: 700, padding: '10px 22px', cursor: input.trim() && !loading ? 'pointer' : 'not-allowed', fontFamily: 'inherit' }}>
               {loading ? 'Locking in...' : 'Generate LockIn Guide →'}
